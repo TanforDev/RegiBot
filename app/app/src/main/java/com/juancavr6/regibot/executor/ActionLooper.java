@@ -15,6 +15,7 @@ import com.juancavr6.regibot.controller.SettingsController;
 import com.juancavr6.regibot.ml.ModelHandler;
 import com.juancavr6.regibot.services.ActionService;
 import com.juancavr6.regibot.services.FloatingMenuService;
+import com.juancavr6.regibot.ui.DebugOverlayManager;
 import com.juancavr6.regibot.utils.CustomUtils;
 
 public class ActionLooper implements Runnable {
@@ -39,6 +40,9 @@ public class ActionLooper implements Runnable {
     //Settings Controller instance
     private final SettingsController controller ;
 
+    //Debug Overlay Manager
+    private DebugOverlayManager debugOverlayManager;
+
     //Last screenshot made
     public Bitmap lastScreenShot;
 
@@ -59,6 +63,7 @@ public class ActionLooper implements Runnable {
     public void run() {
         if(model_map==null) loadModels();
         controller.reloadAllValues();
+        initDebugOverlay();
         service.startService(intent);
 
         isRunning = true;
@@ -75,6 +80,7 @@ public class ActionLooper implements Runnable {
 
                         model_classifier.classify(lastScreenShot);
                         Log.d(TAG,"run(): Class  " + model_classifier.getClassName(0) + " " + model_classifier.getScore(0) );
+                        updateDebugClassifier();
 
                         if(controller.isValidClassification(model_classifier)){
                             switch (model_classifier.getClassName(0)){
@@ -124,6 +130,49 @@ public class ActionLooper implements Runnable {
         model_predictor = ModelHandler.buildPredictor
                 (service,"predictor.tflite");
     }
+
+    private void initDebugOverlay() {
+        debugOverlayManager = DebugOverlayManager.getInstance(service);
+        if (controller.shouldDebugOverlay()) {
+            debugOverlayManager.setEnabled(true);
+            debugOverlayManager.show();
+        }
+    }
+
+    private void updateDebugClassifier() {
+        if (debugOverlayManager != null && debugOverlayManager.isEnabled()) {
+            debugOverlayManager.clearAll();
+            debugOverlayManager.updateClassifier(model_classifier);
+        }
+    }
+
+    private void updateDebugMapDetector() {
+        if (debugOverlayManager != null && debugOverlayManager.isEnabled()) {
+            debugOverlayManager.updateMapDetector(model_map);
+        }
+    }
+
+    private void updateDebugEncounterDetector() {
+        if (debugOverlayManager != null && debugOverlayManager.isEnabled()) {
+            debugOverlayManager.updateEncounterDetector(model_encounter);
+        }
+    }
+
+    private void updateDebugClickableDetector() {
+        if (debugOverlayManager != null && debugOverlayManager.isEnabled()) {
+            debugOverlayManager.updateClickableDetector(model_clickable);
+        }
+    }
+
+    private void updateDebugPredictor(float[] pokeballCoords, RectF boundingBox, float deltaY, float duration) {
+        if (debugOverlayManager != null && debugOverlayManager.isEnabled()) {
+            debugOverlayManager.updatePredictor(pokeballCoords, boundingBox, deltaY, duration);
+        }
+    }
+
+    public DebugOverlayManager getDebugOverlayManager() {
+        return debugOverlayManager;
+    }
     public void pause(){ this.isPaused=true; }
     public void resume(){ this.isPaused=false; }
     public void stop(){ this.isRunning=false; }
@@ -131,6 +180,7 @@ public class ActionLooper implements Runnable {
     private void taskMapScreen() throws InterruptedException{
         model_map.detect(lastScreenShot);
         Log.d(TAG , "run(): Scanning the map : " + model_map.getDetectionList().toString());
+        updateDebugMapDetector();
         int objectMatchIndex = controller.lookForMatchAtMap(model_map);
         if(objectMatchIndex > -1){
             Log.d(TAG,"run(): Proceeding with: " + model_map.getClassName(objectMatchIndex));
@@ -162,6 +212,7 @@ public class ActionLooper implements Runnable {
 
             model_encounter.detect(lastScreenShot);
             Log.d(TAG,"run(): Finding BoundingBox " + model_encounter.getDetectionList());
+            updateDebugEncounterDetector();
 
             int boundingBoxIndex = controller.lookForMatchAtEncounter(model_encounter,"boundingBox");
             int dynamicBoxIndex = controller.lookForMatchAtEncounter(model_encounter,"dynamicBox");
@@ -176,6 +227,7 @@ public class ActionLooper implements Runnable {
     }
     private void taskRewardScreen() throws InterruptedException{
         model_clickable.detect(lastScreenShot);
+        updateDebugClickableDetector();
         int clickableIndex = controller.lookForMatchAtClickable(model_clickable,"clickable");
         Log.d(TAG,clickableIndex + " Finding Clickable:" + model_clickable.getDetectionList());
         if (clickableIndex > -1){
@@ -191,6 +243,7 @@ public class ActionLooper implements Runnable {
     }
     private void taskMenusScreen() throws InterruptedException {
         model_clickable.detect(lastScreenShot);
+        updateDebugClickableDetector();
         int passengerIndex = controller.lookForMatchAtClickable(model_clickable,"passenger");
         Log.d(TAG,passengerIndex + " Discarding Passenger Screen:" + model_clickable.getDetectionList());
         if (passengerIndex > -1){
@@ -419,6 +472,7 @@ public class ActionLooper implements Runnable {
         if (!controller.shouldSaveCoords() || !controller.isPokeballCoordsSet()) {
             model_encounter.detect(lastScreenShot);
             Log.d(TAG, "run(): Finding Pokeball: " + model_encounter.getDetectionList());
+            updateDebugEncounterDetector();
 
             int pokeballIndex = controller.lookForMatchAtEncounter(model_encounter, "pokeball");
 
@@ -459,6 +513,9 @@ public class ActionLooper implements Runnable {
                 service.displayWidth,service.displayHeight,input);
 
         model_predictor.predict(normalizedInput);
+        updateDebugPredictor(pokeballCoords, boundingBox,
+                model_predictor.getDenormalizedDeltaY(service.displayHeight),
+                model_predictor.getDenormalizedDuration());
 
         if(controller.shouldFastCatch()){
             performActionTap(new RectF(0,0,service.displayWidth,service.displayHeight));

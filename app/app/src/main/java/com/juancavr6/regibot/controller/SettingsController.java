@@ -20,6 +20,7 @@ public class SettingsController {
     private boolean fixedPokeball;
     private boolean throwBoost;
     private boolean saveCoords;
+    private boolean debugOverlay;
 
     private int cycleInterval;
     private int waitTimeout ;
@@ -71,6 +72,7 @@ public class SettingsController {
         this.autoCorrectRewardScreen = settingsValuesProvider.shouldAutoCorrectRewardScreen();
         this.autoCorrectMenusScreen = settingsValuesProvider.shouldAutoCorrectMenusScreen();
         this.pokeballCoords= settingsValuesProvider.getPokeballCoords();
+        this.debugOverlay = settingsValuesProvider.shouldDebugOverlay();
 
         // Initialize the priority list based on the settings
 
@@ -278,6 +280,15 @@ public class SettingsController {
     }
     public boolean isPokeballCoordsSet() {
         return !(pokeballCoords[0] == -1 || pokeballCoords[1] == -1);
+    }
+
+    public boolean shouldDebugOverlay() {
+        return debugOverlay;
+    }
+
+    public void setDebugOverlay(boolean debugOverlay) {
+        this.debugOverlay = debugOverlay;
+        settingsValuesProvider.setDebugOverlay(debugOverlay);
     }
 
 }

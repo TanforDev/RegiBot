@@ -21,6 +21,8 @@ import android.widget.Toast;
 import androidx.cardview.widget.CardView;
 
 import com.juancavr6.regibot.R;
+import com.juancavr6.regibot.controller.SettingsController;
+import com.juancavr6.regibot.ui.DebugOverlayManager;
 import com.juancavr6.regibot.ui.fragment.HomeFragment;
 
 public class FloatingMenuService extends Service implements View.OnClickListener{
@@ -37,6 +39,11 @@ public class FloatingMenuService extends Service implements View.OnClickListener
     private ImageView mainIcon;
     private CardView mainButton;
     private CardView destroyButton;
+    private CardView debugButton;
+    private ImageView debugIcon;
+
+    private DebugOverlayManager debugOverlayManager;
+    private SettingsController settingsController;
 
     private final BroadcastReceiver screenReceiver = new BroadcastReceiver() {
         @Override
@@ -68,7 +75,18 @@ public class FloatingMenuService extends Service implements View.OnClickListener
         if( loader != null && intent != null && intent.getBooleanExtra("loadedNotification", false)) {
             loader.setVisibility(View.GONE);
             mainButton.setVisibility(View.VISIBLE);
+            debugButton.setVisibility(View.VISIBLE);
             destroyButton.setVisibility(View.VISIBLE);
+
+            // Initialize debug overlay manager
+            debugOverlayManager = DebugOverlayManager.getInstance(this);
+            settingsController = SettingsController.getInstance(this);
+
+            // Set initial debug state based on settings
+            if (settingsController.shouldDebugOverlay()) {
+                debugOverlayManager.setEnabled(true);
+                updateDebugButton(true);
+            }
 
             fragment.updateClient(true);
             Toast.makeText(this, getString(R.string.displayText_ready), Toast.LENGTH_SHORT).show();
@@ -131,6 +149,9 @@ public class FloatingMenuService extends Service implements View.OnClickListener
             mainIcon = myFloatingView.findViewById(R.id.mainIcon);
             mainButton =  myFloatingView.findViewById(R.id.main);
             mainButton.setOnClickListener(this);
+            debugButton = myFloatingView.findViewById(R.id.debug);
+            debugButton.setOnClickListener(this);
+            debugIcon = myFloatingView.findViewById(R.id.debugIcon);
             destroyButton = myFloatingView.findViewById(R.id.destroy);
             destroyButton.setOnClickListener(this);
         }
@@ -161,12 +182,19 @@ public class FloatingMenuService extends Service implements View.OnClickListener
             }
             isRunning = !isRunning;
             updateMainButton();
+            getApplication().startService(intent);
+
+        } else if (id == R.id.debug) {
+            toggleDebugOverlay();
 
         } else if (id == R.id.destroy) {
             isRunning = false;
+            if (debugOverlayManager != null) {
+                debugOverlayManager.hide();
+            }
             fragment.updateClient(false);
+            getApplication().startService(intent);
         }
-        getApplication().startService(intent);
     }
 
 
@@ -176,6 +204,11 @@ public class FloatingMenuService extends Service implements View.OnClickListener
         Intent intent = new Intent(getApplicationContext(), ActionService.class);
         intent.putExtra("action", "destroy");
         getApplication().startService(intent);
+
+        // Clean up debug overlay
+        if (debugOverlayManager != null) {
+            debugOverlayManager.hide();
+        }
 
         super.onDestroy();
         mWindowManager.removeView(myFloatingView);
@@ -189,6 +222,38 @@ public class FloatingMenuService extends Service implements View.OnClickListener
         }else{
             mainButton.setCardBackgroundColor(Color.parseColor("#C4C4C4"));
             mainIcon.setImageResource(android.R.drawable.ic_media_pause);
+        }
+    }
+
+    private void toggleDebugOverlay() {
+        if (debugOverlayManager == null) {
+            debugOverlayManager = DebugOverlayManager.getInstance(this);
+        }
+
+        boolean newState = !debugOverlayManager.isEnabled();
+        debugOverlayManager.setEnabled(newState);
+
+        if (newState) {
+            debugOverlayManager.show();
+        } else {
+            debugOverlayManager.hide();
+        }
+
+        // Save preference
+        if (settingsController != null) {
+            settingsController.setDebugOverlay(newState);
+        }
+
+        updateDebugButton(newState);
+    }
+
+    private void updateDebugButton(boolean isEnabled) {
+        if (debugButton == null) return;
+
+        if (isEnabled) {
+            debugButton.setCardBackgroundColor(Color.parseColor("#4CAF50")); // Green when active
+        } else {
+            debugButton.setCardBackgroundColor(Color.parseColor("#979797")); // Gray when inactive
         }
     }
 

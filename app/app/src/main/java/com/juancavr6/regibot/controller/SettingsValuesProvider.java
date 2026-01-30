@@ -27,6 +27,7 @@ public class SettingsValuesProvider {
     public static final boolean FIXED_POKEBALL = true; // Activate fixed pokeball
     public static final boolean THROW_BOOST = true;  // Activate throw boost
     public static final boolean SAVE_COORDS = false;  // Activate throw boost
+    public static final boolean DEBUG_OVERLAY = false; // Activate debug overlay
 
     public static final int CYCLE_INTERVAL = 600;// Pause time between cycles
     public static final int WAIT_TIMEOUT = 5000;// Max thread wait time
@@ -355,6 +356,20 @@ public class SettingsValuesProvider {
         float x = Float.parseFloat(parts[0]);
         float y = Float.parseFloat(parts[1]);
         return new float[]{x, y};
+    }
+
+    public boolean shouldDebugOverlay() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        return sharedPreferences.getBoolean(context.getString(R.string.preferences_key_debug_overlay), DEBUG_OVERLAY);
+    }
+
+    public void setDebugOverlay(boolean debugOverlay) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(context.getString(R.string.preferences_key_debug_overlay), debugOverlay);
+        editor.apply();
     }
 
 }
