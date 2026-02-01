@@ -28,6 +28,7 @@ public class SettingsValuesProvider {
     public static final boolean THROW_BOOST = true;  // Activate throw boost
     public static final boolean SAVE_COORDS = false;  // Activate throw boost
     public static final boolean DEBUG_OVERLAY = false; // Activate debug overlay
+    public static final boolean DEBUG_GESTURES = false; // Activate gesture debug overlay
 
     public static final int CYCLE_INTERVAL = 600;// Pause time between cycles
     public static final int WAIT_TIMEOUT = 5000;// Max thread wait time
@@ -369,6 +370,20 @@ public class SettingsValuesProvider {
 
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putBoolean(context.getString(R.string.preferences_key_debug_overlay), debugOverlay);
+        editor.apply();
+    }
+
+    public boolean shouldDebugGestures() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        return sharedPreferences.getBoolean(context.getString(R.string.preferences_key_debug_gestures), DEBUG_GESTURES);
+    }
+
+    public void setDebugGestures(boolean debugGestures) {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(context.getString(R.string.preferences_key_debug_gestures), debugGestures);
         editor.apply();
     }
 

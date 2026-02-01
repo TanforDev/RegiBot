@@ -61,24 +61,6 @@
             </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
-            android:id="@+id/debug"
-            android:layout_width="50dp"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="5dp"
-            app:cardCornerRadius="15dp"
-            app:cardElevation="0dp"
-            android:visibility="gone"
-            app:cardBackgroundColor="@color/gray">
-                <ImageView
-                    android:id="@+id/debugIcon"
-                    android:layout_gravity="center"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@android:drawable/ic_menu_view"
-                    android:layout_marginVertical="5dp"/>
-            </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
             android:id="@+id/destroy"
             android:layout_width="50dp"
             android:layout_height="wrap_content"

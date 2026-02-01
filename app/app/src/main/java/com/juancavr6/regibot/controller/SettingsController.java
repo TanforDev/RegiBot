@@ -21,6 +21,7 @@ public class SettingsController {
     private boolean throwBoost;
     private boolean saveCoords;
     private boolean debugOverlay;
+    private boolean debugGestures;
 
     private int cycleInterval;
     private int waitTimeout ;
@@ -73,6 +74,7 @@ public class SettingsController {
         this.autoCorrectMenusScreen = settingsValuesProvider.shouldAutoCorrectMenusScreen();
         this.pokeballCoords= settingsValuesProvider.getPokeballCoords();
         this.debugOverlay = settingsValuesProvider.shouldDebugOverlay();
+        this.debugGestures = settingsValuesProvider.shouldDebugGestures();
 
         // Initialize the priority list based on the settings
 
@@ -289,6 +291,15 @@ public class SettingsController {
     public void setDebugOverlay(boolean debugOverlay) {
         this.debugOverlay = debugOverlay;
         settingsValuesProvider.setDebugOverlay(debugOverlay);
+    }
+
+    public boolean shouldDebugGestures() {
+        return debugGestures;
+    }
+
+    public void setDebugGestures(boolean debugGestures) {
+        this.debugGestures = debugGestures;
+        settingsValuesProvider.setDebugGestures(debugGestures);
     }
 
 }

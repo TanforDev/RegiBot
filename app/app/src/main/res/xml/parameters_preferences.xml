@@ -127,4 +127,20 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/displayText_debug">
+
+        <SwitchPreferenceCompat
+            android:key="@string/preferences_key_debug_overlay"
+            android:title="@string/config_debug_overlay"
+            android:summary="@string/config_desc_debug_overlay"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
+            android:key="@string/preferences_key_debug_gestures"
+            android:title="@string/config_debug_gestures"
+            android:summary="@string/config_desc_debug_gestures"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

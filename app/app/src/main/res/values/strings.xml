@@ -94,8 +94,12 @@
     <string name="preferences_key_theme" translatable="false">settings_theme</string>
     <string name="preferences_key_language" translatable="false">settings_language</string>
     <string name="preferences_key_debug_overlay" translatable="false">settings_debug_overlay</string>
+    <string name="preferences_key_debug_gestures" translatable="false">settings_debug_gestures</string>
 
-    <string name="config_debug_overlay">Debug overlay</string>
+    <string name="displayText_debug">Debug</string>
+    <string name="config_debug_overlay">Debug detection overlay</string>
     <string name="config_desc_debug_overlay">Shows bounding boxes of what each model sees</string>
+    <string name="config_debug_gestures">Debug gesture overlay</string>
+    <string name="config_desc_debug_gestures">Shows gesture paths (taps, swipes, throws)</string>
 
 </resources>

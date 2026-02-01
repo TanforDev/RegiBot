@@ -137,6 +137,10 @@ public class ActionLooper implements Runnable {
             debugOverlayManager.setEnabled(true);
             debugOverlayManager.show();
         }
+        if (controller.shouldDebugGestures()) {
+            debugOverlayManager.setGestureEnabled(true);
+            debugOverlayManager.showGesture();
+        }
     }
 
     private void updateDebugClassifier() {
@@ -297,6 +301,11 @@ public class ActionLooper implements Runnable {
         if(!CustomUtils.isValidSectionForTap(x,y, service.displayWidth, service.displayHeight))
             return;
 
+        // Debug gesture visualization
+        if (debugOverlayManager != null) {
+            debugOverlayManager.addGestureTap(x, y);
+        }
+
         Path swipePath = new Path();
         swipePath.moveTo(x, y);
         swipePath.lineTo(x, y);
@@ -326,6 +335,11 @@ public class ActionLooper implements Runnable {
 
         int x = Math.round((float)service.displayWidth/2);
         int y = Math.round((float)service.displayHeight/2);
+
+        // Debug gesture visualization
+        if (debugOverlayManager != null) {
+            debugOverlayManager.addGestureSwipe(x, y, x + 200, y, 300);
+        }
 
         Path swipePath = new Path();
         swipePath.moveTo(x, y);
@@ -361,6 +375,12 @@ public class ActionLooper implements Runnable {
 
         int x = Math.round(coords[0]);
         int y = Math.round(coords[1]);
+
+        // Debug gesture visualization
+        if (debugOverlayManager != null) {
+            debugOverlayManager.addGestureHold(x, y, 4000);
+        }
+
         Path swipePath = new Path();
         swipePath.moveTo(x, y);
         swipePath.lineTo(x, y);
@@ -387,14 +407,21 @@ public class ActionLooper implements Runnable {
 
     }
     private void performActionThrow(float[] pokeballCoords,RectF boundingBox ,float deltaY, long duration){
+        float finalX = boundingBox.centerX();
+        float finalY = pokeballCoords[1] + deltaY;
+        long actualDuration = Math.round(duration * controller.getThrowBoostDurationFactor());
+
+        // Debug gesture visualization
+        if (debugOverlayManager != null) {
+            debugOverlayManager.addGestureThrow(pokeballCoords[0], pokeballCoords[1], finalX, finalY, actualDuration);
+        }
+
         Path swipePath = new Path();
         swipePath.moveTo(pokeballCoords[0], pokeballCoords[1]);
-        float finalX = boundingBox.centerX();
-        float finalY = pokeballCoords[1]+deltaY;
         swipePath.lineTo(finalX, finalY);
 
         GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
-        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 50, Math.round(duration*controller.getThrowBoostDurationFactor())));
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 50, actualDuration));
 
         service.dispatchGesture(gestureBuilder.build(), new AccessibilityService.GestureResultCallback() {
             @Override
@@ -415,20 +442,31 @@ public class ActionLooper implements Runnable {
         }, null);
     }
     private void performActionFastThrow(float[] pokeballCoords,RectF boundingBox ,float deltaY, long duration){
+        float finalX = boundingBox.centerX();
+        float finalY = boundingBox.centerY();
+        long actualDuration = Math.round(duration * controller.getThrowBoostDurationFactor());
+
+        float berryStartX = service.displayWidth / 8f;
+        float berryStartY = service.displayHeight;
+        float berryEndY = berryStartY - service.displayHeight * 0.5f;
+
+        // Debug gesture visualization - show both the berry swipe and the throw
+        if (debugOverlayManager != null) {
+            debugOverlayManager.addGestureSwipe(berryStartX, berryStartY, berryStartX, berryEndY, 400);
+            debugOverlayManager.addGestureThrow(pokeballCoords[0], pokeballCoords[1], finalX, finalY, actualDuration);
+        }
 
         Path swipePath = new Path();
         swipePath.moveTo(pokeballCoords[0], pokeballCoords[1]);
-        float finalX = boundingBox.centerX();
-        float finalY = pokeballCoords[1]+deltaY;
         swipePath.lineTo(finalX, finalY);
 
         Path berryPath = new Path();
-        berryPath.moveTo(service.displayWidth/8f, service.displayHeight-(service.displayHeight/16f));
-        berryPath.lineTo(service.displayWidth/8f, service.displayHeight/2f);
+        berryPath.moveTo(berryStartX, berryStartY);
+        berryPath.lineTo(berryStartX, berryEndY);
 
         GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
         gestureBuilder.addStroke(new GestureDescription.StrokeDescription(berryPath, 20, 400));
-        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 40, Math.round(duration*controller.getThrowBoostDurationFactor())));
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 40, actualDuration));
 
 
         service.dispatchGesture(gestureBuilder.build(), new AccessibilityService.GestureResultCallback() {

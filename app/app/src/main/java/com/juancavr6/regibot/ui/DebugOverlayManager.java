@@ -27,8 +27,11 @@ public class DebugOverlayManager {
     private final Handler mainHandler;
 
     private DebugOverlayView debugOverlayView;
+    private GestureDebugOverlayView gestureOverlayView;
     private boolean isShowing = false;
     private boolean isEnabled = false;
+    private boolean isGestureShowing = false;
+    private boolean isGestureEnabled = false;
 
     private DebugOverlayManager(Context context) {
         this.context = context.getApplicationContext();
@@ -223,12 +226,116 @@ public class DebugOverlayManager {
         return isShowing;
     }
 
+    // ==================== GESTURE DEBUG OVERLAY ====================
+
+    /**
+     * Enable or disable the gesture debug overlay feature.
+     */
+    public void setGestureEnabled(boolean enabled) {
+        this.isGestureEnabled = enabled;
+        if (!enabled && isGestureShowing) {
+            hideGesture();
+        }
+    }
+
+    public boolean isGestureEnabled() {
+        return isGestureEnabled;
+    }
+
+    /**
+     * Show the gesture debug overlay on screen.
+     */
+    public void showGesture() {
+        if (!isGestureEnabled || isGestureShowing) return;
+
+        mainHandler.post(() -> {
+            if (gestureOverlayView == null) {
+                gestureOverlayView = new GestureDebugOverlayView(context);
+            }
+
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT
+            );
+            params.gravity = Gravity.TOP | Gravity.START;
+
+            try {
+                windowManager.addView(gestureOverlayView, params);
+                isGestureShowing = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Hide the gesture debug overlay.
+     */
+    public void hideGesture() {
+        if (!isGestureShowing || gestureOverlayView == null) return;
+
+        mainHandler.post(() -> {
+            try {
+                windowManager.removeView(gestureOverlayView);
+                isGestureShowing = false;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Add a tap gesture visualization.
+     */
+    public void addGestureTap(float x, float y) {
+        if (!isGestureEnabled || !isGestureShowing || gestureOverlayView == null) return;
+        mainHandler.post(() -> gestureOverlayView.addTap(x, y));
+    }
+
+    /**
+     * Add a hold gesture visualization.
+     */
+    public void addGestureHold(float x, float y, long durationMs) {
+        if (!isGestureEnabled || !isGestureShowing || gestureOverlayView == null) return;
+        mainHandler.post(() -> gestureOverlayView.addHold(x, y, durationMs));
+    }
+
+    /**
+     * Add a swipe gesture visualization.
+     */
+    public void addGestureSwipe(float startX, float startY, float endX, float endY, long durationMs) {
+        if (!isGestureEnabled || !isGestureShowing || gestureOverlayView == null) return;
+        mainHandler.post(() -> gestureOverlayView.addSwipe(startX, startY, endX, endY, durationMs));
+    }
+
+    /**
+     * Add a throw gesture visualization.
+     */
+    public void addGestureThrow(float startX, float startY, float endX, float endY, long durationMs) {
+        if (!isGestureEnabled || !isGestureShowing || gestureOverlayView == null) return;
+        mainHandler.post(() -> gestureOverlayView.addThrow(startX, startY, endX, endY, durationMs));
+    }
+
+    /**
+     * Check if gesture overlay is showing.
+     */
+    public boolean isGestureShowing() {
+        return isGestureShowing;
+    }
+
     /**
      * Destroy the manager and clean up resources.
      */
     public void destroy() {
         hide();
+        hideGesture();
         debugOverlayView = null;
+        gestureOverlayView = null;
         instance = null;
     }
 }
