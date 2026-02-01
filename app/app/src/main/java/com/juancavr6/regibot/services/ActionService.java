@@ -21,6 +21,15 @@ public class ActionService extends AccessibilityService {
 
     private final String TAG = "ACTION_SERVICE";
 
+    public static final String ACTION_POKEMONGO_FOREGROUND = "com.juancavr6.regibot.POKEMONGO_FOREGROUND";
+    public static final String EXTRA_IS_FOREGROUND = "is_foreground";
+    private static final String POKEMONGO_PACKAGE = "com.nianticlabs.pokemongo";
+    private static final long DEBOUNCE_DELAY_MS = 500;
+
+    private boolean isPokemonGoForeground = false;
+    private final Handler debounceHandler = new Handler();
+    private Runnable pendingForegroundChange = null;
+
     public ActionLooper actionLoop;
     public Thread actionLoopThread;
 
@@ -102,13 +111,66 @@ public class ActionService extends AccessibilityService {
     }
 
     @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {}
+    public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event == null || event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            return;
+        }
+
+        CharSequence packageNameCs = event.getPackageName();
+        if (packageNameCs == null) {
+            return;
+        }
+
+        String packageName = packageNameCs.toString();
+        boolean isNowPokemonGo = POKEMONGO_PACKAGE.equals(packageName);
+
+        // Ignore system UI overlays, status bar changes, and our own app's overlay
+        if (packageName.equals("com.android.systemui") ||
+            packageName.equals(getPackageName())) {
+            return;
+        }
+
+        if (isNowPokemonGo != isPokemonGoForeground) {
+            // Cancel any pending change
+            if (pendingForegroundChange != null) {
+                debounceHandler.removeCallbacks(pendingForegroundChange);
+            }
+
+            final boolean newState = isNowPokemonGo;
+            pendingForegroundChange = () -> {
+                isPokemonGoForeground = newState;
+                notifyPokemonGoForegroundChange(newState);
+                pendingForegroundChange = null;
+            };
+
+            debounceHandler.postDelayed(pendingForegroundChange, DEBOUNCE_DELAY_MS);
+        }
+    }
+
+    private void notifyPokemonGoForegroundChange(boolean isForeground) {
+        Log.d(TAG, "Pokemon Go foreground state changed: " + isForeground);
+
+        // If Pokemon Go went to background, pause the looper
+        if (!isForeground && actionLoop != null && actionLoopThread != null) {
+            actionLoop.pause();
+        }
+
+        // Send broadcast to FloatingMenuService
+        Intent intent = new Intent(ACTION_POKEMONGO_FOREGROUND);
+        intent.putExtra(EXTRA_IS_FOREGROUND, isForeground);
+        intent.setPackage(getPackageName());
+        sendBroadcast(intent);
+    }
     @Override
     public void onInterrupt() {}
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        // Clean up pending callbacks
+        if (pendingForegroundChange != null) {
+            debounceHandler.removeCallbacks(pendingForegroundChange);
+        }
         Log.d(TAG,"onDestroy(): stopping self");
     }
 

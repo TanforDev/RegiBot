@@ -29,6 +29,7 @@ public class FloatingMenuService extends Service implements View.OnClickListener
     Callbacks fragment;
 
     private boolean isRunning = false;
+    private boolean isPokemonGoForeground = false;
 
     private WindowManager mWindowManager;
     private View myFloatingView;
@@ -47,6 +48,16 @@ public class FloatingMenuService extends Service implements View.OnClickListener
         }
     };
 
+    private final BroadcastReceiver pokemonGoReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (ActionService.ACTION_POKEMONGO_FOREGROUND.equals(intent.getAction())) {
+                boolean isForeground = intent.getBooleanExtra(ActionService.EXTRA_IS_FOREGROUND, false);
+                onPokemonGoForegroundChanged(isForeground);
+            }
+        }
+    };
+
     public FloatingMenuService() {
 
 
@@ -59,8 +70,11 @@ public class FloatingMenuService extends Service implements View.OnClickListener
     @Override
     public void onCreate() {
         super.onCreate();
-        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
-        registerReceiver(screenReceiver, filter);
+        IntentFilter screenFilter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        registerReceiver(screenReceiver, screenFilter);
+
+        IntentFilter pokemonGoFilter = new IntentFilter(ActionService.ACTION_POKEMONGO_FOREGROUND);
+        registerReceiver(pokemonGoReceiver, pokemonGoFilter, Context.RECEIVER_NOT_EXPORTED);
     }
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -133,6 +147,9 @@ public class FloatingMenuService extends Service implements View.OnClickListener
             mainButton.setOnClickListener(this);
             destroyButton = myFloatingView.findViewById(R.id.destroy);
             destroyButton.setOnClickListener(this);
+
+            // Start hidden - will show when Pokemon Go is in foreground
+            myFloatingView.setVisibility(View.GONE);
         }
 
            return START_NOT_STICKY;
@@ -179,8 +196,38 @@ public class FloatingMenuService extends Service implements View.OnClickListener
         getApplication().startService(intent);
 
         super.onDestroy();
-        mWindowManager.removeView(myFloatingView);
+        if (myFloatingView != null) {
+            mWindowManager.removeView(myFloatingView);
+        }
         unregisterReceiver(screenReceiver);
+        unregisterReceiver(pokemonGoReceiver);
+    }
+
+    private void onPokemonGoForegroundChanged(boolean isForeground) {
+        isPokemonGoForeground = isForeground;
+
+        if (isForeground) {
+            showFloatingMenu();
+        } else {
+            hideFloatingMenu();
+            // Pause the looper if it was running
+            if (isRunning) {
+                isRunning = false;
+                updateMainButton();
+            }
+        }
+    }
+
+    private void showFloatingMenu() {
+        if (myFloatingView != null) {
+            myFloatingView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void hideFloatingMenu() {
+        if (myFloatingView != null) {
+            myFloatingView.setVisibility(View.GONE);
+        }
     }
 
     private void updateMainButton() {
