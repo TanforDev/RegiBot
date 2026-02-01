@@ -26,7 +26,11 @@ public class ActionService extends AccessibilityService {
     private static final String POKEMONGO_PACKAGE = "com.nianticlabs.pokemongo";
     private static final long DEBOUNCE_DELAY_MS = 500;
 
-    private boolean isPokemonGoForeground = false;
+    private static boolean isPokemonGoForeground = false;
+
+    public static boolean isPokemonGoInForeground() {
+        return isPokemonGoForeground;
+    }
     private final Handler debounceHandler = new Handler();
     private Runnable pendingForegroundChange = null;
 
@@ -124,9 +128,14 @@ public class ActionService extends AccessibilityService {
         String packageName = packageNameCs.toString();
         boolean isNowPokemonGo = POKEMONGO_PACKAGE.equals(packageName);
 
-        // Ignore system UI overlays, status bar changes, and our own app's overlay
+        // Ignore system UI, our own app, and common system components that show overlays
         if (packageName.equals("com.android.systemui") ||
-            packageName.equals(getPackageName())) {
+            packageName.equals(getPackageName()) ||
+            packageName.startsWith("com.google.android.inputmethod") ||
+            packageName.startsWith("com.samsung.android") ||
+            packageName.equals("com.google.android.gms") ||
+            packageName.equals("com.android.vending") ||
+            packageName.startsWith("com.android.inputmethod")) {
             return;
         }
 

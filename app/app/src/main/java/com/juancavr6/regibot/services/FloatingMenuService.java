@@ -96,6 +96,11 @@ public class FloatingMenuService extends Service implements View.OnClickListener
 
         IntentFilter pokemonGoFilter = new IntentFilter(ActionService.ACTION_POKEMONGO_FOREGROUND);
         registerReceiver(pokemonGoReceiver, pokemonGoFilter, Context.RECEIVER_NOT_EXPORTED);
+
+        // Check current Pokemon Go state in case it's already in foreground
+        if (ActionService.isPokemonGoInForeground()) {
+            isPokemonGoForeground = true;
+        }
     }
 
     private void createNotificationChannel() {
@@ -213,8 +218,12 @@ public class FloatingMenuService extends Service implements View.OnClickListener
             destroyButton = myFloatingView.findViewById(R.id.destroy);
             destroyButton.setOnClickListener(this);
 
-            // Start hidden - will show when Pokemon Go is in foreground
-            myFloatingView.setVisibility(View.GONE);
+            // Show or hide based on current Pokemon Go state
+            if (isPokemonGoForeground) {
+                myFloatingView.setVisibility(View.VISIBLE);
+            } else {
+                myFloatingView.setVisibility(View.GONE);
+            }
         }
 
            return START_STICKY;
