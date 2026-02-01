@@ -185,7 +185,7 @@ public class HomeFragment extends Fragment implements FloatingMenuService.Callba
                     }
                     else{
                         context.bindService(floatMenuServiceIntent,mConnection,Context.BIND_AUTO_CREATE);
-                        context.startService(floatMenuServiceIntent);
+                        context.startForegroundService(floatMenuServiceIntent);
 
                         actionServiceIntent.putExtra("action","play");
                         context.startService(actionServiceIntent);
